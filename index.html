@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Livro-Caixa — controle financeiro pessoal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-top">
+    <h1>Livro-Caixa</h1>
+    <label class="month-picker">
+      <span>Mês</span>
+      <input type="month" id="monthSelect">
+    </label>
+  </div>
+  <div class="masthead-balance">
+    <span class="balance-label">Saldo do mês</span>
+    <span class="balance-value" id="balanceValue">R$ 0,00</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="ledger-col">
+
+    <form id="entryForm" class="entry-form" autocomplete="off">
+      <div class="field">
+        <label for="fData">Data</label>
+        <input type="date" id="fData" required>
+      </div>
+      <div class="field field-grow">
+        <label for="fDescricao">Descrição</label>
+        <input type="text" id="fDescricao" placeholder="Ex.: Supermercado" required>
+      </div>
+      <div class="field">
+        <label for="fCategoria">Categoria</label>
+        <select id="fCategoria"></select>
+      </div>
+      <div class="field field-tipo">
+        <span class="visually-hidden">Tipo</span>
+        <div class="toggle" id="tipoToggle">
+          <button type="button" class="toggle-opt is-active" data-tipo="Despesa">Despesa</button>
+          <button type="button" class="toggle-opt" data-tipo="Receita">Receita</button>
+        </div>
+      </div>
+      <div class="field field-valor">
+        <label for="fValor">Valor (R$)</label>
+        <input type="number" id="fValor" min="0" step="0.01" placeholder="0,00" required>
+      </div>
+      <button type="submit" class="btn-add">Lançar</button>
+    </form>
+
+    <table class="ledger" id="ledgerTable">
+      <thead>
+        <tr>
+          <th class="col-data">Data</th>
+          <th class="col-desc">Descrição</th>
+          <th class="col-cat">Categoria</th>
+          <th class="col-valor">Valor</th>
+          <th class="col-del"></th>
+        </tr>
+      </thead>
+      <tbody id="ledgerBody">
+        <!-- linhas inseridas via JS -->
+      </tbody>
+    </table>
+
+    <p class="empty-state" id="emptyState">Nenhum lançamento neste mês ainda. Use o formulário acima para começar.</p>
+
+  </section>
+
+  <aside class="side-col">
+
+    <div class="panel">
+      <h2>Resumo do mês</h2>
+      <dl class="summary-list">
+        <div class="summary-row">
+          <dt>Receitas</dt>
+          <dd class="is-green" id="sumReceitas">R$ 0,00</dd>
+        </div>
+        <div class="summary-row">
+          <dt>Despesas</dt>
+          <dd class="is-red" id="sumDespesas">R$ 0,00</dd>
+        </div>
+        <div class="summary-row summary-total">
+          <dt>Saldo</dt>
+          <dd id="sumSaldo">R$ 0,00</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h2>Orçamento por categoria</h2>
+      <div id="budgetList" class="budget-list"></div>
+      <button type="button" id="editBudgetsBtn" class="btn-text">Editar orçamentos</button>
+    </div>
+
+    <div class="panel">
+      <h2>Despesas por categoria</h2>
+      <canvas id="categoryChart" width="260" height="260"></canvas>
+      <p class="chart-empty" id="chartEmpty">Sem despesas neste mês.</p>
+    </div>
+
+    <div class="panel panel-data">
+      <h2>Dados</h2>
+      <p class="panel-note">Tudo fica salvo neste navegador. Exporte um backup em CSV sempre que quiser.</p>
+      <div class="data-actions">
+        <button type="button" id="exportBtn" class="btn-text">Exportar CSV</button>
+        <label class="btn-text btn-file">
+          Importar CSV
+          <input type="file" id="importInput" accept=".csv" hidden>
+        </label>
+      </div>
+    </div>
+
+  </aside>
+
+</main>
+
+<div class="modal-overlay" id="budgetModalOverlay">
+  <div class="modal" role="dialog" aria-labelledby="budgetModalTitle">
+    <h2 id="budgetModalTitle">Orçamento mensal por categoria</h2>
+    <p class="panel-note">Esse orçamento vale para todos os meses.</p>
+    <div id="budgetForm" class="budget-form"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-text" id="closeBudgetModal">Cancelar</button>
+      <button type="button" class="btn-add" id="saveBudgetsBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
