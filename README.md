@@ -7,10 +7,12 @@ Controle financeiro pessoal simples, no estilo de um livro-caixa: lance receitas
 Basta abrir o `index.html` no navegador. Não precisa instalar nada.
 
 - **Lançar:** preencha data, descrição, categoria e valor no topo, escolha "Despesa" ou "Receita" e clique em **Lançar**.
-- **Excluir:** clique no ✕ ao lado do lançamento.
+- **Categorias suas:** clique no botão **+** ao lado do campo Categoria para criar uma categoria nova na hora (ex.: Gasolina, Faculdade, Estacionamento, Seguro). Não existe lista fixa — você define o que faz sentido para você.
+- **Excluir lançamento:** clique no ✕ ao lado da linha.
 - **Mês:** use o seletor de mês no topo para navegar entre meses.
-- **Orçamento:** clique em "Editar orçamentos" para definir um valor mensal por categoria; a barra de progresso fica amarela perto do limite e vermelha ao estourar.
-- **Backup:** "Exportar CSV" baixa todos os lançamentos; "Importar CSV" lê um arquivo no mesmo formato de volta.
+- **Categorias e orçamento:** clique em "Categorias e orçamento" para definir um valor mensal por categoria, criar novas categorias ou excluir as que não usa mais (os lançamentos já feitos continuam no histórico mesmo se a categoria for excluída depois).
+- **Gráficos:** um gráfico de rosca mostra as despesas do mês por categoria, e um gráfico de barras compara receitas x despesas nos últimos 6 meses.
+- **Backup:** "Exportar CSV" baixa todos os lançamentos; "Importar CSV" lê um arquivo no mesmo formato de volta (categorias novas encontradas no CSV são criadas automaticamente).
 
 Os dados ficam salvos no `localStorage` do navegador (por aparelho/navegador, não sincroniza entre dispositivos).
 

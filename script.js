@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const CATEGORIES = [
+  const DEFAULT_CATEGORIES = [
     "Moradia", "Alimentação", "Transporte", "Saúde", "Educação",
     "Lazer", "Vestuário", "Contas Fixas", "Assinaturas",
     "Cuidados Pessoais", "Investimentos", "Doações", "Outros"
@@ -9,14 +9,19 @@
 
   const STORAGE_TX = "livrocaixa_transacoes";
   const STORAGE_BUDGET = "livrocaixa_orcamentos";
+  const STORAGE_CATEGORIES = "livrocaixa_categorias";
+
+  const MONTH_LABELS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
   const currencyFmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
   // ---------- State ----------
   let transactions = loadTransactions();
   let budgets = loadBudgets();
+  let categories = loadCategories();
   let currentTipo = "Despesa";
-  let chart = null;
+  let categoryChart = null;
+  let trendChart = null;
 
   // ---------- Elements ----------
   const monthSelect = document.getElementById("monthSelect");
@@ -33,8 +38,9 @@
   const sumDespesas = document.getElementById("sumDespesas");
   const sumSaldo = document.getElementById("sumSaldo");
   const budgetList = document.getElementById("budgetList");
-  const chartCanvas = document.getElementById("categoryChart");
+  const categoryChartCanvas = document.getElementById("categoryChart");
   const chartEmpty = document.getElementById("chartEmpty");
+  const trendChartCanvas = document.getElementById("trendChart");
   const exportBtn = document.getElementById("exportBtn");
   const importInput = document.getElementById("importInput");
   const editBudgetsBtn = document.getElementById("editBudgetsBtn");
@@ -42,19 +48,23 @@
   const budgetForm = document.getElementById("budgetForm");
   const closeBudgetModal = document.getElementById("closeBudgetModal");
   const saveBudgetsBtn = document.getElementById("saveBudgetsBtn");
+  const newCatBtn = document.getElementById("newCatBtn");
+  const newCatInline = document.getElementById("newCatInline");
+  const newCatInput = document.getElementById("newCatInput");
+  const newCatConfirm = document.getElementById("newCatConfirm");
+  const newCatModalInput = document.getElementById("newCatModalInput");
+  const newCatModalConfirm = document.getElementById("newCatModalConfirm");
+
+  // Categories currently listed inside the open modal (may include unsaved additions/removals)
+  let modalCategories = [];
 
   // ---------- Init ----------
   function init() {
-    CATEGORIES.forEach(cat => {
-      const opt = document.createElement("option");
-      opt.value = cat;
-      opt.textContent = cat;
-      fCategoria.appendChild(opt);
-    });
-
     const today = new Date();
     fData.value = toDateInputValue(today);
     monthSelect.value = toMonthInputValue(today);
+
+    renderCategorySelect();
 
     tipoToggle.addEventListener("click", (e) => {
       const btn = e.target.closest(".toggle-opt");
@@ -74,6 +84,34 @@
     });
     saveBudgetsBtn.addEventListener("click", saveBudgets);
 
+    newCatBtn.addEventListener("click", () => {
+      newCatInline.hidden = !newCatInline.hidden;
+      if (!newCatInline.hidden) newCatInput.focus();
+    });
+    newCatConfirm.addEventListener("click", () => {
+      const added = addCategory(newCatInput.value);
+      if (added) {
+        newCatInput.value = "";
+        newCatInline.hidden = true;
+        renderCategorySelect();
+        fCategoria.value = added;
+      }
+    });
+    newCatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); newCatConfirm.click(); }
+    });
+
+    newCatModalConfirm.addEventListener("click", () => {
+      const name = (newCatModalInput.value || "").trim();
+      if (!name || modalCategories.includes(name)) return;
+      modalCategories.push(name);
+      newCatModalInput.value = "";
+      renderBudgetFormRows();
+    });
+    newCatModalInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); newCatModalConfirm.click(); }
+    });
+
     renderAll();
   }
 
@@ -92,12 +130,25 @@
     } catch { return {}; }
   }
 
+  function loadCategories() {
+    try {
+      const raw = localStorage.getItem(STORAGE_CATEGORIES);
+      if (raw) return JSON.parse(raw);
+    } catch { /* fall through to default */ }
+    localStorage.setItem(STORAGE_CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES));
+    return DEFAULT_CATEGORIES.slice();
+  }
+
   function saveTransactions() {
     localStorage.setItem(STORAGE_TX, JSON.stringify(transactions));
   }
 
   function saveBudgetsToStorage() {
     localStorage.setItem(STORAGE_BUDGET, JSON.stringify(budgets));
+  }
+
+  function saveCategoriesToStorage() {
+    localStorage.setItem(STORAGE_CATEGORIES, JSON.stringify(categories));
   }
 
   // ---------- Helpers ----------
@@ -118,8 +169,34 @@
     return `${d}/${m}/${y}`;
   }
 
+  function monthLabel(monthStr) {
+    const [y, m] = monthStr.split("-");
+    return `${MONTH_LABELS[parseInt(m, 10) - 1]}/${y.slice(2)}`;
+  }
+
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  // ---------- Categories ----------
+  function addCategory(rawName) {
+    const name = (rawName || "").trim();
+    if (!name || categories.includes(name)) return null;
+    categories.push(name);
+    saveCategoriesToStorage();
+    return name;
+  }
+
+  function renderCategorySelect() {
+    const prev = fCategoria.value;
+    fCategoria.innerHTML = "";
+    categories.forEach(cat => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      opt.textContent = cat;
+      fCategoria.appendChild(opt);
+    });
+    if (categories.includes(prev)) fCategoria.value = prev;
   }
 
   // ---------- Add transaction ----------
@@ -163,7 +240,8 @@
     renderLedger();
     renderSummary();
     renderBudgets();
-    renderChart();
+    renderCategoryChart();
+    renderTrendChart();
   }
 
   function renderLedger() {
@@ -227,7 +305,7 @@
     const gastos = despesasPorCategoria();
     budgetList.innerHTML = "";
 
-    CATEGORIES.forEach(cat => {
+    categories.forEach(cat => {
       const orc = budgets[cat] || 0;
       const gasto = gastos[cat] || 0;
       if (orc === 0 && gasto === 0) return;
@@ -258,32 +336,33 @@
     }
   }
 
-  function renderChart() {
+  const PALETTE = ["#1f6f4a", "#b8842c", "#b23a2e", "#5a6459", "#3f8c63",
+                    "#d1a659", "#c85f52", "#7c8a7f", "#2a5a41", "#94693a",
+                    "#6a7fae", "#a45c8c", "#4f8a8b"];
+
+  function renderCategoryChart() {
     const gastos = despesasPorCategoria();
     const labels = Object.keys(gastos);
     const values = Object.values(gastos);
 
     if (!labels.length) {
-      chartCanvas.style.display = "none";
+      categoryChartCanvas.style.display = "none";
       chartEmpty.style.display = "block";
-      if (chart) { chart.destroy(); chart = null; }
+      if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
       return;
     }
 
-    chartCanvas.style.display = "block";
+    categoryChartCanvas.style.display = "block";
     chartEmpty.style.display = "none";
 
-    const palette = ["#1f6f4a", "#b8842c", "#b23a2e", "#5a6459", "#3f8c63",
-                      "#d1a659", "#c85f52", "#7c8a7f", "#2a5a41", "#94693a"];
-
-    if (chart) chart.destroy();
-    chart = new Chart(chartCanvas, {
+    if (categoryChart) categoryChart.destroy();
+    categoryChart = new Chart(categoryChartCanvas, {
       type: "doughnut",
       data: {
         labels,
         datasets: [{
           data: values,
-          backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+          backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
           borderColor: "#f8f7f1",
           borderWidth: 2
         }]
@@ -299,24 +378,94 @@
     });
   }
 
-  // ---------- Budget modal ----------
+  function lastSixMonths(anchorMonthStr) {
+    const [y, m] = anchorMonthStr.split("-").map(Number);
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      let year = y, month = m - i;
+      while (month <= 0) { month += 12; year -= 1; }
+      months.push(`${year}-${String(month).padStart(2, "0")}`);
+    }
+    return months;
+  }
+
+  function renderTrendChart() {
+    const months = lastSixMonths(monthSelect.value);
+    const receitasData = months.map(m =>
+      transactions.filter(t => monthOf(t.data) === m && t.tipo === "Receita").reduce((s, t) => s + t.valor, 0)
+    );
+    const despesasData = months.map(m =>
+      transactions.filter(t => monthOf(t.data) === m && t.tipo === "Despesa").reduce((s, t) => s + t.valor, 0)
+    );
+
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(trendChartCanvas, {
+      type: "bar",
+      data: {
+        labels: months.map(monthLabel),
+        datasets: [
+          { label: "Receitas", data: receitasData, backgroundColor: "#1f6f4a" },
+          { label: "Despesas", data: despesasData, backgroundColor: "#b23a2e" }
+        ]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true, ticks: { font: { family: "IBM Plex Mono", size: 10 } } },
+          x: { ticks: { font: { family: "Inter", size: 11 } } }
+        },
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { font: { family: "Inter", size: 11 }, color: "#1b2a22", boxWidth: 10, padding: 10 }
+          }
+        }
+      }
+    });
+  }
+
+  // ---------- Categories & budget modal ----------
   function openBudgetModal() {
+    modalCategories = categories.slice();
+    renderBudgetFormRows();
+    budgetModalOverlay.classList.add("is-open");
+  }
+
+  function renderBudgetFormRows() {
     budgetForm.innerHTML = "";
-    CATEGORIES.forEach(cat => {
+    modalCategories.forEach(cat => {
       const row = document.createElement("div");
       row.className = "budget-form-row";
-      row.innerHTML = `<label for="b_${cat}">${cat}</label>`;
+
+      const label = document.createElement("label");
+      label.textContent = cat;
+      label.setAttribute("for", "b_" + cat);
+
       const input = document.createElement("input");
       input.type = "number";
       input.min = "0";
       input.step = "0.01";
       input.id = "b_" + cat;
+      input.dataset.cat = cat;
       input.value = budgets[cat] || "";
       input.placeholder = "0,00";
-      row.appendChild(input);
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "row-del";
+      del.title = "Excluir categoria";
+      del.textContent = "✕";
+      del.addEventListener("click", () => {
+        modalCategories = modalCategories.filter(c => c !== cat);
+        renderBudgetFormRows();
+      });
+
+      row.append(label, input, del);
       budgetForm.appendChild(row);
     });
-    budgetModalOverlay.classList.add("is-open");
+
+    if (!modalCategories.length) {
+      budgetForm.innerHTML = '<p class="panel-note">Nenhuma categoria. Adicione uma abaixo.</p>';
+    }
   }
 
   function closeBudgetModalFn() {
@@ -324,13 +473,18 @@
   }
 
   function saveBudgets() {
-    CATEGORIES.forEach(cat => {
+    const newBudgets = {};
+    modalCategories.forEach(cat => {
       const input = document.getElementById("b_" + cat);
-      const v = parseFloat(input.value);
-      budgets[cat] = v > 0 ? Math.round(v * 100) / 100 : 0;
+      const v = input ? parseFloat(input.value) : 0;
+      newBudgets[cat] = v > 0 ? Math.round(v * 100) / 100 : 0;
     });
+    categories = modalCategories.slice();
+    budgets = newBudgets;
+    saveCategoriesToStorage();
     saveBudgetsToStorage();
     closeBudgetModalFn();
+    renderCategorySelect();
     renderAll();
   }
 
@@ -387,11 +541,14 @@
         const [data, descricao, categoria, tipo, valor] = parseCsvLine(line);
         const v = parseFloat(valor);
         if (!data || !descricao || !v) return;
+        if (categoria && !categories.includes(categoria)) {
+          categories.push(categoria);
+        }
         transactions.push({
           id: uid(),
           data,
           descricao,
-          categoria: CATEGORIES.includes(categoria) ? categoria : "Outros",
+          categoria: categoria || "Outros",
           tipo: tipo === "Receita" ? "Receita" : "Despesa",
           valor: Math.round(v * 100) / 100
         });
@@ -399,6 +556,8 @@
       });
       if (imported) {
         saveTransactions();
+        saveCategoriesToStorage();
+        renderCategorySelect();
         renderAll();
       }
       importInput.value = "";

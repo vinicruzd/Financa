@@ -40,7 +40,14 @@
       </div>
       <div class="field">
         <label for="fCategoria">Categoria</label>
-        <select id="fCategoria"></select>
+        <div class="cat-select-row">
+          <select id="fCategoria"></select>
+          <button type="button" id="newCatBtn" class="btn-newcat" title="Nova categoria">+</button>
+        </div>
+        <div class="new-cat-inline" id="newCatInline" hidden>
+          <input type="text" id="newCatInput" placeholder="Nome da categoria">
+          <button type="button" id="newCatConfirm" class="btn-text">Adicionar</button>
+        </div>
       </div>
       <div class="field field-tipo">
         <span class="visually-hidden">Tipo</span>
@@ -98,13 +105,18 @@
     <div class="panel">
       <h2>Orçamento por categoria</h2>
       <div id="budgetList" class="budget-list"></div>
-      <button type="button" id="editBudgetsBtn" class="btn-text">Editar orçamentos</button>
+      <button type="button" id="editBudgetsBtn" class="btn-text">Categorias e orçamento</button>
     </div>
 
     <div class="panel">
       <h2>Despesas por categoria</h2>
       <canvas id="categoryChart" width="260" height="260"></canvas>
       <p class="chart-empty" id="chartEmpty">Sem despesas neste mês.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Receitas x despesas (6 meses)</h2>
+      <canvas id="trendChart" width="280" height="200"></canvas>
     </div>
 
     <div class="panel panel-data">
@@ -125,9 +137,13 @@
 
 <div class="modal-overlay" id="budgetModalOverlay">
   <div class="modal" role="dialog" aria-labelledby="budgetModalTitle">
-    <h2 id="budgetModalTitle">Orçamento mensal por categoria</h2>
-    <p class="panel-note">Esse orçamento vale para todos os meses.</p>
+    <h2 id="budgetModalTitle">Categorias e orçamento</h2>
+    <p class="panel-note">O orçamento vale para todos os meses. Para excluir uma categoria, clique no ✕ (os lançamentos já feitos com ela continuam no histórico).</p>
     <div id="budgetForm" class="budget-form"></div>
+    <div class="new-cat-inline new-cat-inline-modal">
+      <input type="text" id="newCatModalInput" placeholder="Nova categoria">
+      <button type="button" id="newCatModalConfirm" class="btn-text">Adicionar</button>
+    </div>
     <div class="modal-actions">
       <button type="button" class="btn-text" id="closeBudgetModal">Cancelar</button>
       <button type="button" class="btn-add" id="saveBudgetsBtn">Salvar</button>

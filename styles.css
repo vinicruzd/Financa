@@ -155,6 +155,45 @@ button, input, select {
 }
 
 .field-grow { flex: 1 1 160px; }
+
+.cat-select-row {
+  display: flex;
+  gap: 4px;
+}
+
+.cat-select-row select { flex: 1; }
+
+.btn-newcat {
+  width: 30px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ink-soft);
+}
+
+.btn-newcat:hover { color: var(--ink); background: var(--paper-raised); }
+
+.new-cat-inline {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.new-cat-inline input {
+  flex: 1;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
+
+.new-cat-inline-modal {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
 .field-valor { width: 110px; }
 .field-valor input { font-family: var(--font-mono); text-align: right; }
 
@@ -361,6 +400,8 @@ button, input, select {
   margin-top: 12px;
 }
 
+.panel canvas { max-width: 100%; }
+
 .chart-empty {
   font-size: 0.8rem;
   color: var(--ink-soft);
@@ -412,7 +453,7 @@ button, input, select {
   gap: 10px;
 }
 
-.budget-form-row label { font-size: 0.85rem; }
+.budget-form-row label { font-size: 0.85rem; flex: 1; }
 
 .budget-form-row input {
   width: 110px;
@@ -421,6 +462,11 @@ button, input, select {
   padding: 6px 8px;
   font-family: var(--font-mono);
   text-align: right;
+}
+
+.budget-form-row .row-del {
+  font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .modal-actions {
